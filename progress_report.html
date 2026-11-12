@@ -1,0 +1,258 @@
+<title>WhittleFormer 修改進度</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: single reading column (report), wide before/after blocks that split into two columns on desktop */
+:root{
+  --bg:#f5f7fa; --surface:#ffffff; --ink:#18212d; --muted:#5a6676; --line:#dde3ea;
+  --accent:#2b5c8f; --accent-soft:#e6eef7;
+  --ins-bg:#dff3e6; --ins-fg:#14532d; --del-bg:#fbe3e3; --del-fg:#8a1c1c;
+  --ok:#1f7a4d; --ok-bg:#e1f4ea; --wip:#9a5b00; --wip-bg:#fdf0d9; --ask:#8a1c1c; --ask-bg:#fbe3e3;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-paper:"Source Serif 4","Times New Roman",Georgia,serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161d; --surface:#18202a; --ink:#e4e9ef; --muted:#9aa6b4; --line:#2a3542;
+  --accent:#8db8e6; --accent-soft:#1d2b3b;
+  --ins-bg:#16382a; --ins-fg:#a6e9c0; --del-bg:#3d1c1f; --del-fg:#f3b0b0;
+  --ok:#7fd3a6; --ok-bg:#163327; --wip:#f0c071; --wip-bg:#3a2c12; --ask:#f3b0b0; --ask-bg:#3d1c1f;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161d; --surface:#18202a; --ink:#e4e9ef; --muted:#9aa6b4; --line:#2a3542;
+  --accent:#8db8e6; --accent-soft:#1d2b3b;
+  --ins-bg:#16382a; --ins-fg:#a6e9c0; --del-bg:#3d1c1f; --del-fg:#f3b0b0;
+  --ok:#7fd3a6; --ok-bg:#163327; --wip:#f0c071; --wip-bg:#3a2c12; --ask:#f3b0b0; --ask-bg:#3d1c1f;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15.5px;line-height:1.75;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 80px}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
+.read{max-width:760px}
+h1,h2,h3{text-wrap:balance;line-height:1.35;margin:0}
+h1{font-size:1.9rem;font-weight:700}
+h2{font-size:1.4rem;font-weight:700;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+h3{font-size:1.1rem;font-weight:700}
+p{margin:0}
+.eyebrow{font-size:.78rem;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;font-weight:500}
+.meta{color:var(--muted);font-size:.92rem}
+section{display:flex;flex-direction:column;gap:20px}
+.block{display:flex;flex-direction:column;gap:14px}
+.chip{display:inline-block;font-size:.78rem;font-weight:700;padding:2px 10px;border-radius:999px;letter-spacing:.03em;white-space:nowrap}
+.chip.ok{background:var(--ok-bg);color:var(--ok)} .chip.wip{background:var(--wip-bg);color:var(--wip)} .chip.ask{background:var(--ask-bg);color:var(--ask)}
+.loc{font-family:var(--f-mono);font-size:.8rem;color:var(--accent);background:var(--accent-soft);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.rv{font-family:var(--f-mono);font-size:.8rem;font-weight:500;color:var(--muted);border:1px solid var(--line);padding:0 6px;border-radius:4px;white-space:nowrap}
+/* summary */
+.summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.sum{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.sum b{font-size:1.02rem}
+.sum span{color:var(--muted);font-size:.9rem;line-height:1.6}
+@media (max-width:720px){.summary{grid-template-columns:1fr}}
+/* before/after */
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.88rem;color:var(--muted)}
+.diff{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+@media (max-width:820px){.diff{grid-template-columns:1fr}}
+.pane{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px 18px;min-width:0}
+.pane .eyebrow{margin-bottom:8px;display:block}
+.paper{font-family:var(--f-paper);font-size:1rem;line-height:1.7;hyphens:auto}
+ins{background:var(--ins-bg);color:var(--ins-fg);text-decoration:none;padding:1px 2px;border-radius:2px}
+del{background:var(--del-bg);color:var(--del-fg);padding:1px 2px;border-radius:2px}
+.same{color:var(--muted);font-style:italic;font-family:var(--f-body);font-size:.9rem}
+ul,ol{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:6px}
+.note{border-left:3px solid var(--wip);background:var(--surface);padding:10px 14px;border-radius:0 6px 6px 0;font-size:.95rem}
+.note.ok{border-left-color:var(--ok)}
+/* tables */
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:.93rem}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--line)}
+th{font-size:.8rem;letter-spacing:.05em;color:var(--muted);font-weight:500;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.num{font-variant-numeric:tabular-nums;color:var(--muted);width:2.5em}
+.k-perm{color:var(--del-fg);font-weight:700}.k-rec{color:var(--ok);font-weight:700}.k-unk{color:var(--muted);font-weight:700}
+.issue{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.issue h3{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.issue h3 .tag{font-family:var(--f-mono);font-size:.85rem;color:var(--accent)}
+.formula{font-family:var(--f-paper);font-size:1.08rem;background:var(--accent-soft);padding:10px 14px;border-radius:6px;overflow-x:auto}
+.example{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+@media (max-width:640px){.example{grid-template-columns:1fr}}
+.example div{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px;font-size:.93rem}
+.qlist li{padding-left:2px}
+hr{border:0;border-top:1px solid var(--line);margin:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header class="block read">
+  <span class="eyebrow">TMC 改投 · INFOCOM 2027 #1571328204 意見回覆</span>
+  <h1>WhittleFormer 修改進度</h1>
+  <p class="meta">Oliver · 2026-11-10 · 對應檔案：<span class="loc">TMC/main.tex</span>、<span class="loc">TMC/4-method.tex</span>、<span class="loc">TMC/4-C-RM.tex</span></p>
+</header>
+
+<div class="summary">
+  <div class="sum"><span class="chip ok">已完成</span><b>Intro 第二、三段</b><span>補上「為什麼不用 optimization／RL」與「為什麼 RMAB 適合」。已放入 main.tex，編譯正常。</span></div>
+  <div class="sum"><span class="chip wip">進行中</span><b>Reward 定義（Section IV）</b><span>設計邏輯確定為「攻擊才得分」，但論文沒寫出來；連帶找到被 jam 後 UAV 行為等多處前後矛盾。</span></div>
+  <div class="sum"><span class="chip ask">待確認</span><b>4 個實作問題</b><span>需負責程式的同學回答，才能定稿 Section IV-A；另有 2 點建模問題想和老師討論。</span></div>
+</div>
+
+<!-- ============ PART 1 ============ -->
+<section>
+  <h2><span class="chip ok">Part 1 已完成</span>Introduction 動機補強</h2>
+  <div class="legend"><span><ins>綠底</ins> 新增或改寫</span><span><del>紅底刪除線</del> 原文刪除</span><span>修改處在 PDF 中以 <code>\oliver{}</code>（藍字）標示</span></div>
+
+  <div class="block">
+    <h3>1.1 第二段：現有方法為什麼不夠 <span class="loc">main.tex:105</span></h3>
+    <p class="read">回應 <span class="rv">R1-W1-1</span>「Why the problem cannot be solved by optimization methods or RL methods?」與 <span class="rv">R2-W1</span>「motivation unclear in the introduction」。原文只把兩個根本限制套在 MARL 上；改寫後三類方法各自說明為何無法直接延伸，再把 (1)(2) 改成三者共同的限制。</p>
+    <div class="diff">
+      <div class="pane"><span class="eyebrow">原文</span><p class="paper">Existing counter-UAV systems address only parts of this decision problem. Rule-based and optimization-driven methods allocate jamming resources according to predefined threat priorities [hao2024], <del>whereas learning-based methods</del> typically optimize individual actions, such as communication-link selection or transmit-power control [rao2022]. <del>While</del> multi-agent reinforcement learning (MARL) can coordinate multiple decisions [valianti2024, wang2025], existing approaches generally assume a fixed number of UAVs and encode their states and actions using fixed-dimensional representations. <del>This design introduces two fundamental limitations</del>: (1) <i>Time-varying UAV populations</i> … (2) <i>Limited scalability</i> … <span class="same">（其後未改動）</span></p></div>
+      <div class="pane"><span class="eyebrow">修改後</span><p class="paper">Existing counter-UAV systems address only parts of this decision problem<ins>, and none of these approaches extends directly to the full problem</ins>. <ins><i>Rule-based and optimization-driven methods</i></ins> allocate jamming resources according to predefined threat priorities [hao2024]. <ins>Such priorities must be specified before deployment, yet threat severity is not directly measurable: it emerges from the interplay of distance, velocity, heading, RF activity, and temporal behaviors such as loitering or deceleration during an approach. Moreover, solving the allocation from the current snapshot alone ignores how each target's threat will evolve in the subsequent time slots.</ins> <ins><i>Learning-based methods</i> can extract such patterns from data, but they</ins> typically optimize individual actions, such as communication-link selection or transmit-power control [rao2022]. <ins>Extending a single policy to select K jamming targets among N<sub>t</sub> UAVs yields a joint action space of C(N<sub>t</sub>, K) combinations, whose size grows combinatorially with N<sub>t</sub>.</ins> <ins><i>Multi-agent reinforcement learning (MARL)</i></ins> can coordinate multiple decisions [valianti2024, wang2025], <ins>but</ins> existing approaches generally assume a fixed number of UAVs and encode their states and actions using fixed-dimensional representations. <ins>Across these approaches, two fundamental limitations remain</ins>: (1) <i>Time-varying UAV populations</i> … (2) <i>Limited scalability</i> … <span class="same">（其後未改動）</span></p></div>
+    </div>
+    <div class="note read"><b>尚待確認：</b>
+      <ul>
+        <li>hao2024 是否確實為「依當下快照求解」；若否，第二句改為較保守的 “computed without anticipating how each target's threat will evolve”。</li>
+        <li>rao2022 標題為 <i>Multiagent</i> DRL，歸類在「learning-based optimize individual actions」可能被質疑，可考慮換一篇 single-agent 文獻。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>1.2 第三段：為什麼 RMAB 適合這個問題 <span class="loc">main.tex:109</span></h3>
+    <p class="read">回應 <span class="rv">R1-W1-1/2</span>、<span class="rv">R2-W1</span>。原文只有「避免組合搜尋」一句。改寫後補上問題結構與 RMAB 的對應、複雜度論點（最優解 PSPACE-hard，Whittle relaxation 拆成逐架子問題後排序），以及人數可變的理由。原本與新句重複的一句刪除。</p>
+    <div class="diff">
+      <div class="pane"><span class="eyebrow">原文</span><p class="paper">To address this challenge, we formulate counter-UAV jamming as a restless multi-armed bandit (RMAB) problem <del>and</del> propose <i>WhittleFormer</i>, a scalable neural index policy. <del>By exploiting the RMAB structure, WhittleFormer decomposes target selection into per-UAV evaluations and ranks UAVs using their learned indices, thereby avoiding combinatorial search over joint actions.</del> Its Transformer-based encoder … <span class="same">（其後未改動）</span></p></div>
+      <div class="pane"><span class="eyebrow">修改後</span><p class="paper">To address this challenge, we formulate counter-UAV jamming as a restless multi-armed bandit (RMAB) problem<ins>, which naturally matches its structure: each UAV is an arm whose state keeps evolving whether or not it is jammed, jamming a UAV corresponds to activating its arm, and limited jamming resources allow at most K arms to be activated per time slot. Although optimal RMAB control is PSPACE-hard [papadimitriou1999], the Whittle relaxation [whittle1988] decouples the problem into per-UAV subproblems, each summarized by a scalar <i>Whittle index</i> that quantifies the long-term benefit of jamming that UAV now. Jamming the K UAVs with the highest indices replaces a search over all joint actions with per-UAV evaluation and sorting, and this index policy is asymptotically optimal under suitable conditions [weber1990]. Because each index depends only on its own UAV, the same policy applies regardless of how many UAVs are present. We</ins> propose <i>WhittleFormer</i>, a scalable neural index policy <ins>that learns these indices directly from interaction data without requiring a known transition model</ins>. Its Transformer-based encoder … <span class="same">（其後未改動）</span></p></div>
+    </div>
+    <div class="note read"><b>用詞上的取捨：</b>
+      <ul>
+        <li>降低複雜度的是 Whittle relaxation（拆解成逐架子問題），不是「建模成 RMAB」本身；PSPACE-hard 指的是一般 RMAB 的最優解。</li>
+        <li>「asymptotically optimal」依賴 indexability，本文尚未驗證，因此寫成 “under suitable conditions”（見 Part 2 待辦）。</li>
+        <li>Whittle index ≠ threat：index 衡量「現在 jam 它多換到的長期效益」，threat 只是當下危險程度。這個區別正好回答 R2-W1「為何用 Whittle index 當 priority」。</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note ok read">已放入 <span class="loc">TMC/main.tex</span>，重新編譯：11 頁、無錯誤、無未定義引用。</div>
+</section>
+
+<hr>
+
+<!-- ============ PART 2 ============ -->
+<section>
+  <h2><span class="chip wip">Part 2 進行中</span>Reward 定義與 Section IV 前後一致性</h2>
+  <p class="read">回應 <span class="rv">R1-W2</span>「It is not clear how the reward is determined」與 <span class="rv">R2-F8</span>。討論 reward 的過程中，發現 Section III、IV、VI 對「jam 之後發生什麼」有多處說法不一致。</p>
+
+  <div class="block read">
+    <h3>2.1 設計邏輯：「攻擊才得分」</h3>
+    <p>Action 是「攻擊」。jam 一架 UAV 就拿到它的威脅分數，不 jam 就沒有。因此目標函數最大化的是<b>被 jam 掉的威脅總量</b>，與評估指標 TTJ（Total Threat Jammed）一致。</p>
+    <div class="formula"><i>r</i>(<i>s</i>, <i>a</i>) = <i>a</i> · <i>r</i><sub>φ</sub>(𝓗)　　（jam：得到 r<sub>φ</sub>；不 jam：0）</div>
+    <p><b>問題：</b>論文中沒有這個式子。讀者只看得到 <span class="loc">4-method.tex:20</span> 的 r(s, a)，以及 <span class="loc">4-C-RM.tex:19</span> 的「r<sub>φ</sub>(𝓗) provides the reward r」（不含 action）。兩句接起來會讀成「reward 與 action 無關」，而 max Σr 就變成「最大化威脅」。設計本身沒問題，需要補上定義，並在 IV-A 加 forward reference。</p>
+  </div>
+
+  <div class="block">
+    <h3>2.2 發現的前後矛盾</h3>
+
+    <div class="issue">
+      <h3><span class="tag">A</span>被 jam 成功的 UAV：永久移除還是會恢復？（7 處）</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>#</th><th>位置</th><th>原文說法</th><th>隱含行為</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td><span class="loc">3-env.tex:8</span></td><td>neutralized UAVs “lose their motion capability and are removed”</td><td class="k-perm">永久移除</td></tr>
+          <tr><td class="num">2</td><td><span class="loc">4-method.tex:17</span></td><td>同上，“subsequently removed”</td><td class="k-perm">永久移除</td></tr>
+          <tr><td class="num">3</td><td><span class="loc">4-method.tex:20</span></td><td>離開 𝒰<sub>t</sub> 後 “transitions to a terminal state and contributes no further reward”</td><td class="k-perm">永久移除</td></tr>
+          <tr><td class="num">4</td><td><span class="loc">main.tex:962</span></td><td>“inactive for the configured recovery interval and then resumes from its interrupted trajectory, unless permanent neutralization is enabled”</td><td class="k-rec">預設會恢復</td></tr>
+          <tr><td class="num">5</td><td><span class="loc">main.tex:794</span> TTJ</td><td>加總所有 “successful-jam events” Σ<sub>t</sub> ŝ<sub>i</sub><sup>t</sup> G<sub>i</sub><sup>t</sup></td><td class="k-rec">同一架可被成功 jam 多次</td></tr>
+          <tr><td class="num">6</td><td><span class="loc">main.tex:831</span> CNR</td><td>𝕀[Σ<sub>t</sub> ŝ<sub>i</sub><sup>t</sup> ≥ 1]（至少一次）</td><td class="k-rec">同上</td></tr>
+          <tr><td class="num">7</td><td><span class="loc">main.tex:969</span> 實驗設定</td><td>未說明哪些實驗用 permanent、哪些用 recovery</td><td class="k-unk">不明</td></tr>
+        </tbody>
+      </table></div>
+      <p>另外，第 1 點「失去動力」與第 4 點「從中斷處繼續飛」是兩種不同的物理行為；恢復中的 UAV 是否仍算在 𝒰<sub>t</sub>，也與第 3 點的 terminal state 衝突。</p>
+    </div>
+
+    <div class="issue">
+      <h3><span class="tag">B</span>「攻擊」與「攻擊成功」沒有區分</h3>
+      <p>IV-A 定義 a<sub>i</sub>=1 為 “UAV i is jammed”，但同段又寫 “<i>successfully</i> neutralized”。實際上被 Top-K 選中後，還要經過 SSC／MILP 並達到功率門檻（<span class="loc">main.tex:574</span>、<span class="loc">:960</span>）才算成功。reward 是在「被選中」時給，還是在「成功」時給？訓練環境裡有沒有 allocator？這也是 <span class="rv">R1-W4</span>「Section V is not connected」的根源。</p>
+    </div>
+
+    <div class="issue">
+      <h3><span class="tag">C</span>狀態定義前後不一 <span class="rv">R2-F7</span></h3>
+      <p>IV-A 定義 s<sub>i</sub><sup>t</sup> = o<sub>i</sub><sup>t</sup>（單一 frame，並假設 Markov）；IV-B 又說單一 frame 不足以判斷威脅，改用最近 D 個 frame 的 𝓗<sub>i</sub><sup>t</sup>。符號在 s、x ≡ 𝓗、𝓗 之間混用，Eq.(16) 寫 λ<sub>θ</sub>(s<sub>i</sub><sup>t</sup>)，輸出 head 則寫 λ<sub>θ</sub>(𝓗<sub>i</sub><sup>t</sup>)。建議 IV-A 直接定義 s<sub>i</sub><sup>t</sup> := 𝓗<sub>i</sub><sup>t</sup>。</p>
+    </div>
+
+    <div class="issue">
+      <h3><span class="tag">D</span>Reward 先使用、後定義</h3>
+      <p>IV-A、IV-B 都用到 r，直到 IV-C 才說明來源。R1 也批評 “The paper organization is not very good”。至少在 Eq.(4) 附近加一句 “The reward is specified in Section IV-C”。</p>
+    </div>
+
+    <!-- <div class="issue">
+      <h3><span class="tag">E</span>訓練與評估用不同的量，但來源相同</h3>
+      <p>訓練 reward 是當下的 r<sub>φ</sub>；評估標準 DIFT 是未來 H 步的折扣 r<sub>φ</sub>。兩者關係未說明，而且都來自同一個 reward model，可能被質疑為循環評估。需要一句說明兩者的連結，並與傳統威脅指標比較（<span class="rv">R2-F8</span>）。</p>
+    </div> -->
+
+    <div class="issue">
+      <h3><span class="tag">E</span>其他小矛盾</h3>
+      <ul>
+        <li>軌跡來源：Section III 寫 minimum-snap（<span class="loc">3-env.tex:10</span>），Section VI 寫 Pegasus 與實機飛行（<span class="loc">main.tex:947</span>）。</li>
+        <li>符號：DIFT 的 horizon H 與 history 𝓗 易混淆；TTJ 的 ŝ 與狀態 s 撞名；DIFT 的 γ 是否為 RL 的 γ 未說明。</li>
+        <li>Typo：<span class="loc">4-method.tex:25</span> 𝒰t 少底線、<span class="loc">4-C-RM.tex:19</span> 𝓗i 少底線、Algorithm 1 迴圈變數 j 與條件 g mod T<sub>λ</sub> 不一致。</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- <div class="block read">
+    <h3>2.3 建議的統一建模：把「恢復」放進 state</h3>
+    <p>被 jam 的 UAV 仍留在 𝒰<sub>t</sub>，只是進入另一個狀態。每個 arm 的狀態多一個「恢復倒數」c<sub>i</sub><sup>t</sup>：</p>
+    <ul>
+      <li>c = 0：正常飛行，可被攻擊。</li>
+      <li>jam 成功：c ← T<sub>rec</sub>。期間 UAV 停住、reward 為 0、攻擊無效，倒數歸零後從中斷處繼續原軌跡。</li>
+      <li><b>永久擊落 = T<sub>rec</sub> = ∞</b>，此時該狀態就是 absorbing state。</li>
+    </ul>
+    <p>好處：兩種模式用同一套式子描述；𝒰<sub>t</sub> 只因進場與離開防區而變動，上表 7 處可用同一說法統一；Intro 的 “be neutralized” 改成 “be temporarily disabled” 或刪除即可，不影響 streaming 的動機。每個 arm 的轉移仍只與自身有關，Whittle relaxation 照樣成立。</p>
+    <p><b>注意：</b>觀測必須讓 agent 看得出自己是否在恢復中（例如 observation 加 disabled 指標），否則不滿足 Markov。</p>
+  </div> -->
+
+  <!-- <div class="block">
+    <h3>2.4 想和老師討論的兩個建模問題</h3>
+    <div class="issue">
+      <h3><span class="tag">①</span>「攻擊才得分」＋「攻擊後永久移除」可能產生「等威脅變大再打」的誘因</h3>
+      <p>例：UAV A 正在逼近，威脅現在是 1，下一步會變 10。</p>
+      <div class="example">
+        <div><b>現在攻擊</b><br>拿到 1，A 被移除，之後不再有分數。<br>Q(s, 1) = 1</div>
+        <div><b>現在不攻擊</b><br>拿補貼 λ，下一步再打拿 10。<br>Q(s, 0) ≈ λ + γ·10</div>
+      </div>
+      <p>只要 γ·10 &gt; 1，即使 λ = 0 也是不攻擊比較好，A 的 index 反而很低。這與 Intro 的「預防未來威脅」相反，也與用 DIFT（未來威脅）評估排序的方式不一致。實驗結果顯示 WhittleFormer 對 DIFT 排序相當準，所以實際程式可能不是這個組合（例如訓練時採 recovery 模式，或 γ 很小），需先確認。</p>
+      <p>參考方向：若 reward 改為「每步未被打掉的 UAV 扣 r<sub>φ</sub>」（防守邏輯），粗略推導下 index 約等於「打掉它可避免的未來威脅」，與 DIFT 自然對齊。若採 recovery 模式，誘因變弱，但可能出現反覆攻擊同一架高威脅 UAV 的傾向。</p>
+    </div>
+    <div class="issue">
+      <h3><span class="tag">②</span>補貼依當下狀態而定，與 Whittle index 的定義不完全一致</h3>
+      <p>Whittle index 的定義要求整個 MDP 用同一個固定 λ。Eq.(13) 的 r̃ = r + (1−a)·sg[λ<sub>θ</sub>(x)] 則讓每個狀態用自己的 λ，因此學到的 Q 不是某個固定 λ 下的 Q<sub>λ</sub>。這可視為合理近似（部分 neural Whittle 文獻也這樣做），但 <span class="loc">4-method.tex:142</span> 寫 “estimates Q<sub>λ*(s)</sub>”，說法比實作更強。可選擇：誠實寫成 approximation 並引用前例，或改成與原版 QWI 一致的寫法。</p>
+    </div>
+  </div> -->
+
+  <!-- <div class="block read">
+    <h3>2.5 需要負責程式的同學回答</h3>
+    <ol class="qlist">
+      <li><b>Reward 實際定義：</b>選中就給 r<sub>φ</sub>，還是 neutralize 成功才給？不攻擊時是否為 0？</li>
+      <li><b>訓練時</b> neutralized 的 UAV 是永久移除還是會恢復？<b>評估時</b>呢？兩者是否一致？T<sub>rec</sub> 設多少？</li>
+      <li><b>訓練環境裡有沒有 allocator</b>，還是「選中就算成功」？</li>
+      <li>訓練用的 <b>γ</b> 是多少？（決定 2.4 ① 的影響程度）</li>
+    </ol>
+    <p class="meta">確認後，IV-A 加一段即可同時處理 R1-W2（reward）、R1-W4（與 Section V 的銜接），以及矛盾 A、B、C、D。</p>
+  </div> -->
+
+  <div class="block read">
+    <h3>2.3 Section IV 其他待補（尚未開始）</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>項目</th><th>位置</th><th>對應意見</th></tr></thead>
+      <tbody>
+        <tr><td>IV-C 補資料描述（標註者以「domain experts」表示、資料量、片段長度、tie 比例、held-out accuracy）與 RLHF 文獻（Christiano 2017、Wirth 2017、Bradley–Terry 1952）</td><td><span class="loc">4-C-RM.tex:8</span></td><td><span class="rv">R1-W2</span> <span class="rv">R2-F8</span></td></tr>
+        <tr><td>Algorithm 1 參數值、exploration 方式、收斂準則；被註解掉的實作細節（Double DQN、PER、RLPD 等）</td><td><span class="loc">4-method.tex:248–327</span></td><td><span class="rv">R2-F4</span></td></tr>
+        <tr><td>為什麼用 GPT-2、是否用預訓練權重；GPT-2 是 decoder-only，“encoder” 一詞需修正</td><td><span class="loc">4-method.tex:145</span></td><td><span class="rv">R1-W3</span></td></tr>
+        <tr><td>Two-timescale 的理由與引用（Borkar）</td><td><span class="loc">4-method.tex:218</span></td><td><span class="rv">R2-F5</span></td></tr>
+        <tr><td>Indexability 的經驗驗證</td><td><span class="loc">4-method.tex:90</span></td><td><span class="rv">R2-W3</span> <span class="rv">R1-F2</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+</div>

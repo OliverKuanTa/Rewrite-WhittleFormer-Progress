@@ -1,0 +1,444 @@
+<title>WhittleFormer 修改進度</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: single reading column (report), wide before/after blocks that split into two columns on desktop */
+:root{
+  --bg:#f5f7fa; --surface:#ffffff; --ink:#18212d; --muted:#5a6676; --line:#dde3ea;
+  --accent:#2b5c8f; --accent-soft:#e6eef7;
+  --ins-bg:#dff3e6; --ins-fg:#14532d; --del-bg:#fbe3e3; --del-fg:#8a1c1c;
+  --ok:#1f7a4d; --ok-bg:#e1f4ea; --wip:#9a5b00; --wip-bg:#fdf0d9; --ask:#8a1c1c; --ask-bg:#fbe3e3;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-paper:"Source Serif 4","Times New Roman",Georgia,serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161d; --surface:#18202a; --ink:#e4e9ef; --muted:#9aa6b4; --line:#2a3542;
+  --accent:#8db8e6; --accent-soft:#1d2b3b;
+  --ins-bg:#16382a; --ins-fg:#a6e9c0; --del-bg:#3d1c1f; --del-fg:#f3b0b0;
+  --ok:#7fd3a6; --ok-bg:#163327; --wip:#f0c071; --wip-bg:#3a2c12; --ask:#f3b0b0; --ask-bg:#3d1c1f;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161d; --surface:#18202a; --ink:#e4e9ef; --muted:#9aa6b4; --line:#2a3542;
+  --accent:#8db8e6; --accent-soft:#1d2b3b;
+  --ins-bg:#16382a; --ins-fg:#a6e9c0; --del-bg:#3d1c1f; --del-fg:#f3b0b0;
+  --ok:#7fd3a6; --ok-bg:#163327; --wip:#f0c071; --wip-bg:#3a2c12; --ask:#f3b0b0; --ask-bg:#3d1c1f;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15.5px;line-height:1.75;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 80px}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
+.read{max-width:760px}
+h1,h2,h3{text-wrap:balance;line-height:1.35;margin:0}
+h1{font-size:1.9rem;font-weight:700}
+h2{font-size:1.4rem;font-weight:700;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+h3{font-size:1.1rem;font-weight:700}
+p{margin:0}
+.eyebrow{font-size:.78rem;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;font-weight:500}
+.meta{color:var(--muted);font-size:.92rem}
+section{display:flex;flex-direction:column;gap:20px}
+.block{display:flex;flex-direction:column;gap:14px}
+.chip{display:inline-block;font-size:.78rem;font-weight:700;padding:2px 10px;border-radius:999px;letter-spacing:.03em;white-space:nowrap}
+.chip.ok{background:var(--ok-bg);color:var(--ok)} .chip.wip{background:var(--wip-bg);color:var(--wip)} .chip.ask{background:var(--ask-bg);color:var(--ask)}
+.loc{font-family:var(--f-mono);font-size:.8rem;color:var(--accent);background:var(--accent-soft);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.rv{font-family:var(--f-mono);font-size:.8rem;font-weight:500;color:var(--muted);border:1px solid var(--line);padding:0 6px;border-radius:4px;white-space:nowrap}
+/* summary */
+.summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.sum{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.sum b{font-size:1.02rem}
+.sum span{color:var(--muted);font-size:.9rem;line-height:1.6}
+@media (max-width:720px){.summary{grid-template-columns:1fr}}
+/* before/after */
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.88rem;color:var(--muted)}
+.diff{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+@media (max-width:820px){.diff{grid-template-columns:1fr}}
+.pane{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px 18px;min-width:0}
+.pane .eyebrow{margin-bottom:8px;display:block}
+.paper{font-family:var(--f-paper);font-size:1rem;line-height:1.7;hyphens:auto}
+ins{background:var(--ins-bg);color:var(--ins-fg);text-decoration:none;padding:1px 2px;border-radius:2px}
+del{background:var(--del-bg);color:var(--del-fg);padding:1px 2px;border-radius:2px}
+.same{color:var(--muted);font-style:italic;font-family:var(--f-body);font-size:.9rem}
+ul,ol{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:6px}
+.note{border-left:3px solid var(--wip);background:var(--surface);padding:10px 14px;border-radius:0 6px 6px 0;font-size:.95rem}
+.note.ok{border-left-color:var(--ok)}
+/* tables */
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:.93rem}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--line)}
+th{font-size:.8rem;letter-spacing:.05em;color:var(--muted);font-weight:500;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.num{font-variant-numeric:tabular-nums;color:var(--muted);width:2.5em}
+.k-perm{color:var(--del-fg);font-weight:700}.k-rec{color:var(--ok);font-weight:700}.k-unk{color:var(--muted);font-weight:700}
+.issue{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.issue h3{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.issue h3 .tag{font-family:var(--f-mono);font-size:.85rem;color:var(--accent)}
+.formula{font-family:var(--f-paper);font-size:1.08rem;background:var(--accent-soft);padding:10px 14px;border-radius:6px;overflow-x:auto}
+.example{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+@media (max-width:640px){.example{grid-template-columns:1fr}}
+.example div{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px;font-size:.93rem}
+.qlist li{padding-left:2px}
+hr{border:0;border-top:1px solid var(--line);margin:0}
+/* model-at-a-glance */
+.lane{display:grid;grid-template-columns:7.5em minmax(0,1fr);gap:12px;align-items:stretch}
+.lane-name{font-size:.8rem;font-weight:700;letter-spacing:.06em;color:var(--muted);padding-top:12px}
+.lane-name small{display:block;font-weight:400;letter-spacing:0;line-height:1.4;margin-top:2px}
+.flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;min-width:0}
+.node{flex:1 1 0;min-width:150px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.node b{font-size:.92rem}
+.node .m{font-family:var(--f-paper);font-size:.98rem;line-height:1.5}
+.node .d{font-size:.82rem;color:var(--muted);line-height:1.5}
+.node.key{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.arrow{flex:0 0 26px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:1.1rem}
+@media (max-width:760px){.lane{grid-template-columns:1fr}.lane-name{padding-top:0}.flow{flex-direction:column}.node{min-width:0}.arrow{flex-basis:22px;transform:rotate(90deg)}}
+.steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.steps{grid-template-columns:1fr}}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.step .n{font-family:var(--f-mono);font-size:.78rem;color:var(--accent);font-weight:500}
+.step .m{font-family:var(--f-paper);font-size:1.02rem;background:var(--accent-soft);padding:8px 10px;border-radius:6px;overflow-x:auto;line-height:1.6}
+.step p{font-size:.9rem;color:var(--muted)}
+.answer{background:var(--accent-soft);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.answer .big{font-family:var(--f-paper);font-size:1.25rem}
+.chip.tbd{background:var(--wip-bg);color:var(--wip);font-size:.7rem;padding:1px 7px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* v3 additions: clarified (red) vs code (green) versions, status chips */
+:root{--clar:#b42318; --clar-bg:#fdecea; --code:#0b6b3a; --code-bg:#e3f4ea; --todo:#5a6676; --todo-bg:#eceff3}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--clar:#ff9b8f; --clar-bg:#3d1c1f; --code:#7fd3a6; --code-bg:#163327; --todo:#9aa6b4; --todo-bg:#232c37}}
+:root[data-theme="dark"]{--clar:#ff9b8f; --clar-bg:#3d1c1f; --code:#7fd3a6; --code-bg:#163327; --todo:#9aa6b4; --todo-bg:#232c37}
+.cl{color:var(--clar)} .cd{color:var(--code)}
+.cl-tag,.cd-tag{font-family:var(--f-mono);font-size:.74rem;font-weight:500;padding:0 6px;border-radius:4px;margin-right:4px;white-space:nowrap}
+.cl-tag{background:var(--clar-bg);color:var(--clar)} .cd-tag{background:var(--code-bg);color:var(--code)}
+.chip.todo{background:var(--todo-bg);color:var(--todo)}
+.chip.blk{background:var(--clar-bg);color:var(--clar)}
+.vs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+@media (max-width:820px){.vs{grid-template-columns:1fr}}
+.vcard{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.vcard.cl-b{border-top:3px solid var(--clar)} .vcard.cd-b{border-top:3px solid var(--code)}
+.vcard .big{font-family:var(--f-paper);font-size:1.15rem;background:var(--accent-soft);padding:8px 12px;border-radius:6px;overflow-x:auto}
+.resolves{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:.85rem;color:var(--muted)}
+td .rv{margin:0 2px 2px 0;display:inline-block}
+.decide{border:2px solid var(--clar);border-radius:8px;padding:14px 18px;background:var(--surface);display:flex;flex-direction:column;gap:10px}
+.counts{display:flex;gap:10px;flex-wrap:wrap}
+.counts span{font-size:.9rem}
+</style>
+
+<div class="wrap">
+
+<header class="block read">
+  <span class="eyebrow">TMC 改投 · INFOCOM 2027 #1571328204 意見回覆</span>
+  <h1>WhittleFormer 修改進度</h1>
+  <p class="meta">Oliver · 2026-11-16 · 第 3 版 · 對應檔案：<span class="loc">TMC/main.tex</span>、<span class="loc">TMC/4-method.tex</span></p>
+</header>
+
+<div class="summary">
+  <div class="sum"><span class="chip ok">已完成</span><b>Intro 第二、三段</b><span>補上「為什麼不用 optimization／RL」與「為什麼 RMAB 適合」，已放入 main.tex。</span></div>
+  <div class="sum"><span class="chip wip">已改寫第一版</span><b>Section IV 重排與改寫</b><span>依「問題 → reward → 架構 → 訓練 → 部署」重排。確定的部分已寫入；不確定的部分同學版本（紅）與程式版本（綠）並列。</span></div>
+  <div class="sum"><span class="chip blk">需要老師決定</span><b>照程式寫，還是改方法重跑</b><span>程式的 reward 是當下威脅、沒有補貼，和同學說明（未來威脅 G）不同，影響 Intro 與 Section IV 的論述。</span></div>
+</div>
+
+<!-- ============ PART 1 ============ -->
+<section>
+  <h2><span class="chip ok">Part 1 已完成</span>Introduction 動機補強</h2>
+  <div class="legend"><span><ins>綠底</ins> 新增或改寫</span><span><del>紅底刪除線</del> 原文刪除</span><span>修改處在 PDF 中以 <code>\oliver{}</code>（藍字）標示</span></div>
+
+  <div class="block">
+    <h3>1.1 第二段：現有方法為什麼不夠 <span class="loc">main.tex:105</span></h3>
+    <p class="read">回應 <span class="rv">R1-W1-1</span>「Why the problem cannot be solved by optimization methods or RL methods?」與 <span class="rv">R2-W1</span>「motivation unclear in the introduction」。原文只把兩個根本限制套在 MARL 上；改寫後三類方法各自說明為何無法直接延伸，再把 (1)(2) 改成三者共同的限制。</p>
+    <div class="diff">
+      <div class="pane"><span class="eyebrow">原文</span><p class="paper">Existing counter-UAV systems address only parts of this decision problem. Rule-based and optimization-driven methods allocate jamming resources according to predefined threat priorities [hao2024], <del>whereas learning-based methods</del> typically optimize individual actions, such as communication-link selection or transmit-power control [rao2022]. <del>While</del> multi-agent reinforcement learning (MARL) can coordinate multiple decisions [valianti2024, wang2025], existing approaches generally assume a fixed number of UAVs and encode their states and actions using fixed-dimensional representations. <del>This design introduces two fundamental limitations</del>: (1) <i>Time-varying UAV populations</i> … (2) <i>Limited scalability</i> … <span class="same">（其後未改動）</span></p></div>
+      <div class="pane"><span class="eyebrow">修改後</span><p class="paper">Existing counter-UAV systems address only parts of this decision problem<ins>, and none of these approaches extends directly to the full problem</ins>. <ins><i>Rule-based and optimization-driven methods</i></ins> allocate jamming resources according to predefined threat priorities [hao2024]. <ins>Such priorities must be specified before deployment, yet threat severity is not directly measurable: it emerges from the interplay of distance, velocity, heading, RF activity, and temporal behaviors such as loitering or deceleration during an approach. Moreover, solving the allocation from the current snapshot alone ignores how each target's threat will evolve in the subsequent time slots.</ins> <ins><i>Learning-based methods</i> can extract such patterns from data, but they</ins> typically optimize individual actions, such as communication-link selection or transmit-power control [rao2022]. <ins>Extending a single policy to select K jamming targets among N<sub>t</sub> UAVs yields a joint action space of C(N<sub>t</sub>, K) combinations, whose size grows combinatorially with N<sub>t</sub>.</ins> <ins><i>Multi-agent reinforcement learning (MARL)</i></ins> can coordinate multiple decisions [valianti2024, wang2025], <ins>but</ins> existing approaches generally assume a fixed number of UAVs and encode their states and actions using fixed-dimensional representations. <ins>Across these approaches, two fundamental limitations remain</ins>: (1) <i>Time-varying UAV populations</i> … (2) <i>Limited scalability</i> … <span class="same">（其後未改動）</span></p></div>
+    </div>
+    <div class="note read"><b>尚待確認：</b>
+      <ul>
+        <li>hao2024 是否確實為「依當下快照求解」；若否，第二句改為較保守的 “computed without anticipating how each target's threat will evolve”。</li>
+        <li>rao2022 標題為 <i>Multiagent</i> DRL，歸類在「learning-based optimize individual actions」可能被質疑，可考慮換一篇 single-agent 文獻。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>1.2 第三段：為什麼 RMAB 適合這個問題 <span class="loc">main.tex:109</span></h3>
+    <p class="read">回應 <span class="rv">R1-W1-1/2</span>、<span class="rv">R2-W1</span>。原文只有「避免組合搜尋」一句。改寫後補上問題結構與 RMAB 的對應、複雜度論點（最優解 PSPACE-hard，Whittle relaxation 拆成逐架子問題後排序），以及人數可變的理由。原本與新句重複的一句刪除。</p>
+    <div class="diff">
+      <div class="pane"><span class="eyebrow">原文</span><p class="paper">To address this challenge, we formulate counter-UAV jamming as a restless multi-armed bandit (RMAB) problem <del>and</del> propose <i>WhittleFormer</i>, a scalable neural index policy. <del>By exploiting the RMAB structure, WhittleFormer decomposes target selection into per-UAV evaluations and ranks UAVs using their learned indices, thereby avoiding combinatorial search over joint actions.</del> Its Transformer-based encoder … <span class="same">（其後未改動）</span></p></div>
+      <div class="pane"><span class="eyebrow">修改後</span><p class="paper">To address this challenge, we formulate counter-UAV jamming as a restless multi-armed bandit (RMAB) problem<ins>, which naturally matches its structure: each UAV is an arm whose state keeps evolving whether or not it is jammed, jamming a UAV corresponds to activating its arm, and limited jamming resources allow at most K arms to be activated per time slot. Although optimal RMAB control is PSPACE-hard [papadimitriou1999], the Whittle relaxation [whittle1988] decouples the problem into per-UAV subproblems, each summarized by a scalar <i>Whittle index</i> that quantifies the long-term benefit of jamming that UAV now. Jamming the K UAVs with the highest indices replaces a search over all joint actions with per-UAV evaluation and sorting, and this index policy is asymptotically optimal under suitable conditions [weber1990]. Because each index depends only on its own UAV, the same policy applies regardless of how many UAVs are present. We</ins> propose <i>WhittleFormer</i>, a scalable neural index policy <ins>that learns these indices directly from interaction data without requiring a known transition model</ins>. Its Transformer-based encoder … <span class="same">（其後未改動）</span></p></div>
+    </div>
+    <div class="note read"><b>用詞上的取捨：</b>
+      <ul>
+        <li>降低複雜度的是 Whittle relaxation（拆解成逐架子問題），不是「建模成 RMAB」本身；PSPACE-hard 指的是一般 RMAB 的最優解。</li>
+        <li>「asymptotically optimal」依賴 indexability，目前寫成 “under suitable conditions”；依 Part 2 的 2.1，indexability 可在訓練設定下直接證明。</li>
+        <li>Whittle index ≠ threat：index 衡量「現在 jam 它多換到的長期效益」，threat 只是當下危險程度。這個區別正好回答 R2-W1「為何用 Whittle index 當 priority」。</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note ok read">已放入 <span class="loc">TMC/main.tex</span>，重新編譯：11 頁、無錯誤、無未定義引用。</div>
+</section>
+
+<hr>
+
+<!-- ============ PART 2 ============ -->
+<section>
+  <h2><span class="chip wip">Part 2 進行中</span>Section IV：釐清後的架構、與程式的差異、改寫對照</h2>
+  <p class="read">先向負責訓練的同學口頭釐清模型，再直接讀程式（<span class="loc">Jammer-RMAB-main/</span>）核對，發現兩者有幾處不一致。Section IV 已依新架構改寫：確定的部分直接寫入，不確定的部分<b>兩種版本都先寫上</b>，在 PDF 中用顏色區分：</p>
+  <div class="legend">
+    <span><span class="cl-tag">[Clarified]</span>紅字：依同學說明的版本</span>
+    <span><span class="cd-tag">[Code]</span>深綠字：依程式實際做法的版本</span>
+    <span>藍字 <code>\oliver{}</code>：兩者一致、已確定的改寫</span>
+  </div>
+
+  <!-- 2.1 -->
+  <div class="block">
+    <h3>2.1 釐清後的架構（依同學說明）</h3>
+
+    <div class="lane">
+      <div class="lane-name">① 學威脅<small>離線、一次</small></div>
+      <div class="flow">
+        <div class="node"><b>專家成對比較</b><span class="m">(σ<sub>1</sub>, σ<sub>2</sub>, y), y ∈ {0, ½, 1}</span><span class="d">兩段過去的軌跡片段，哪段比較危險</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><b>Reward model</b><span class="m">r<sub>φ</sub>(𝓗) ∈ ℝ</span><span class="d">Bradley–Terry 訓練；評的是「已觀測」的視窗</span></div>
+        <div class="arrow">→</div>
+        <div class="node key"><b>未來威脅（事後計算）</b><span class="m">G<sup>t,H</sup> = Σ<sub>ℓ=0</sub><sup>H−1</sup> γ<sup>ℓ</sup> r<sub>φ</sub>(𝓗<sup>t+ℓ</sup>)</span><span class="d">模擬中整條軌跡已知，所以拿得到</span></div>
+      </div>
+    </div>
+
+    <div class="lane">
+      <div class="lane-name">② 學 index<small>訓練環境</small></div>
+      <div class="flow">
+        <div class="node"><b>狀態</b><span class="m">s := 𝓗<sub>i</sub><sup>t</sup>（最近 D 個 frame）</span><span class="d">packet、position、velocity</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><b>WhittleFormer</b><span class="m">Q<sub>θ</sub>(s,0), Q<sub>θ</sub>(s,1), λ<sub>θ</sub>(s)</span><span class="d">共用 Transformer backbone，三個 head</span></div>
+        <div class="arrow">→</div>
+        <div class="node key"><b>QWI 式 two-timescale</b><span class="m">Q 快、λ 慢（每 T<sub>λ</sub> 步、η<sub>λ</sub> &lt; η<sub>Q</sub>）</span><span class="d">λ 收斂到 Q<sub>1</sub> = Q<sub>0</sub> 的補貼</span></div>
+      </div>
+    </div>
+
+    <div class="lane">
+      <div class="lane-name">③ 部署<small>測試環境</small></div>
+      <div class="flow">
+        <div class="node"><b>算所有 UAV 的 index</b><span class="m">λ<sub>θ</sub>(𝓗<sub>i</sub><sup>t</sup>), i ∈ 𝒰<sub>t</sub></span><span class="d">一次 batch forward</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><b>選目標</b><span class="m">𝒦<sub>t</sub> = TopK(λ<sub>θ</sub>, K)</span><span class="d">人數改變不需重訓</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><b>SSC／MILP（Section V）</b><span class="m">beam、頻段、功率</span><span class="d">功率達門檻才算 jam 成功</span></div>
+      </div>
+    </div>
+
+    <div class="tbl"><table>
+      <thead><tr><th>項目</th><th>訓練環境</th><th>測試環境</th></tr></thead>
+      <tbody>
+        <tr><td>jam 之後 UAV 的行為</td><td><b>不受影響</b>，照原軌跡飛（轉移與 action 無關）</td><td>被成功 jam 的 UAV 離開 𝒰<sub>t</sub></td></tr>
+        <tr><td>Allocator</td><td><b>沒有</b>，被選中就視為命中</td><td>有，功率達門檻才算成功</td></tr>
+        <tr><td>UAV 數量</td><td>固定 <span class="chip tbd">程式不同，見 2.2</span></td><td>隨進場、擊落而變動</td></tr>
+        <tr><td>Reward</td><td>選中才拿到 G：r(s,1) = G<sup>t,H</sup>、r(s,0) = 0 <span class="chip tbd">程式不同，見 2.2</span></td><td>不需要（只用 index 排序）</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="answer read">
+      <span class="eyebrow">一個兩種版本都成立的關鍵推導</span>
+      <p>訓練時 jam 不改變 UAV，下一個狀態與 action 無關，兩個 Q 的未來項相同而抵消：</p>
+      <div class="big">Q<sub>λ</sub>(s,1) − Q<sub>λ</sub>(s,0) = r(s,1) − r(s,0) − λ</div>
+      <p>所以：(a) Whittle index 就是 <b>r(s,1) − r(s,0)</b>；(b) Q-learning 的 γ 不影響 index（先前討論的「未來被算兩次」問題因此不影響結果）；(c) Q 差值隨 λ 遞減，<b>indexability 直接成立</b>（可用來回應 R2-W3）。index 的實際意義取決於 reward 怎麼定，這正是同學說法與程式的分歧點。</p>
+    </div>
+  </div>
+
+  <!-- 2.2 -->
+  <div class="block">
+    <h3>2.2 釐清後的架構 vs. 程式</h3>
+    <div class="vs">
+      <div class="vcard cl-b">
+        <span class="cl-tag" style="align-self:flex-start">[Clarified] 同學說明</span>
+        <div class="big">r(s,1) = G<sup>t,H</sup>，r(s,0) = 0</div>
+        <p>補貼 λ 有加進 Q 的 target，λ 會收斂。</p>
+        <div class="big">λ* = E[ G<sup>t,H</sup> | 𝓗<sup>t</sup> ]</div>
+        <p>index ＝「從過去軌跡<b>預測的未來威脅</b>」。和 Intro 第三段 “long-term benefit” 的寫法一致。</p>
+      </div>
+      <div class="vcard cd-b">
+        <span class="cd-tag" style="align-self:flex-start">[Code] 程式實際做法</span>
+        <div class="big">r(s,1) = p<sup>t</sup>，r(s,0) = 1 − p<sup>t</sup></div>
+        <p>p<sup>t</sup> = sigmoid((r<sub>φ</sub> − μ<sub>t</sub>)/σ<sub>t</sub>) 是<b>當下</b>威脅正規化到 [0,1]（<span class="loc">reward.py:183</span>）。補貼在程式裡是 0 的 placeholder（<span class="loc">dqn.py:526</span>），所以 λ 沒有固定點，只是累積 Q 差值。</p>
+        <div class="big">Q<sub>1</sub> − Q<sub>0</sub> ≈ 2p<sup>t</sup> − 1</div>
+        <p>index 的排序 ≈「<b>當下威脅</b>」的排序，不含對未來的預測。</p>
+      </div>
+    </div>
+
+    <div class="tbl"><table>
+      <thead><tr><th>項目</th><th>原論文</th><th><span class="cl">同學說明</span></th><th><span class="cd">程式</span></th></tr></thead>
+      <tbody>
+        <tr><td>訓練 UAV 數</td><td>未說明</td><td class="cl">固定 N 架</td><td class="cd">1 架（num_arms = 1）</td></tr>
+        <tr><td>Reward</td><td>r<sub>φ</sub>（沒有 action）</td><td class="cl">a · G<sup>t,H</sup></td><td class="cd">p<sup>t</sup> 或 1 − p<sup>t</sup></td></tr>
+        <tr><td>補貼 λ 進 Q target</td><td>有（Eq. r̃）</td><td class="cl">有</td><td class="cd">沒有（placeholder 0）</td></tr>
+        <tr><td>Index 的意義</td><td>長期效益</td><td class="cl">預測的未來威脅</td><td class="cd">當下威脅的排序</td></tr>
+        <tr><td>DIFT 的 horizon</td><td>固定 H</td><td>—</td><td class="cd">到 episode 結束，r<sub>φ</sub> 不正規化，γ = 0.99</td></tr>
+        <tr><td>Backbone</td><td>GPT-2</td><td>—</td><td class="cd">GPT-2 架構、隨機初始化（12 層、12 head、768）；每 80 episode 凍結一次</td></tr>
+        <tr><td>Pooling</td><td>attention-weighted</td><td>—</td><td class="cd">masked mean（已改寫，屬確定）</td></tr>
+        <tr><td>Loss</td><td>平方誤差</td><td>—</td><td class="cd">Huber＋Double DQN（DDQN 的 argmax 用到 s 而非 s′，疑似 bug）</td></tr>
+        <tr><td>RLPD 線上／離線 50/50</td><td>有</td><td>—</td><td class="cd">程式中找不到（已從正文移除）</td></tr>
+        <tr><td>測試時被 jam 的 UAV</td><td>永久移除</td><td>—</td><td class="cd">壓制 5–15 步後恢復；累積 J<sub>break</sub> 次才永久移除（J<sub>break</sub> 為 1 或 5 待確認）</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="decide read">
+      <span class="chip blk" style="align-self:flex-start">需要老師決定</span>
+      <p><b>論文要照哪個版本寫？</b></p>
+      <ul>
+        <li><b>照程式寫（綠）：</b>不用重跑實驗。但 index 只是當下威脅的排序，Intro 第三段的 “long-term benefit”、two-timescale 的收斂論述都要改，也要面對「那為什麼不直接用 r<sub>φ</sub> 排序」的質疑（R2-F12）。</li>
+        <li><b>改方法、照同學說明寫（紅）：</b>reward 改成 G、把補貼加進 Q target 後重新訓練並重跑實驗。論文目前的敘事（預測未來威脅、Whittle 收斂）可以保留。</li>
+      </ul>
+      <p class="meta">兩個版本都已寫在 4-method.tex，決定後刪掉另一個即可。另一個仍待討論的問題：在紅色版本下 index = E[G | 𝓗]，reviewer 可能問「為什麼不直接用監督式學習迴歸 G」，建議用 R2-F12 的 ablation 回答。</p>
+    </div>
+  </div>
+
+  <!-- 2.3 -->
+  <div class="block">
+    <h3>2.3 Section IV 改寫前後對照</h3>
+    <p class="read">新的小節順序是：<b>問題 → reward 是什麼 → 用什麼模型學 → 怎麼訓練 → 怎麼部署</b>。reward model 從最後一節移到第二節；原本混在一起的訓練與推論拆成兩節。所有段落前的粗體小標題都已拿掉。</p>
+    <div class="tbl"><table>
+      <thead><tr><th>原本</th><th>改寫後</th></tr></thead>
+      <tbody>
+        <tr><td>IV-A Streaming RMAB</td><td><b>4.1</b> Streaming RMAB 與 Whittle index（＋為什麼用 Whittle index）</td></tr>
+        <tr><td>IV-B WhittleFormer（架構＋訓練＋推論＋Algorithm 1）</td><td><b>4.2</b> Preference-based threat reward（原 IV-C）</td></tr>
+        <tr><td>IV-C Reward model</td><td><b>4.3</b> WhittleFormer 架構</td></tr>
+        <tr><td>—</td><td><b>4.4</b> Training（訓練環境、two-timescale、實作細節、Algorithm 1）</td></tr>
+        <tr><td>—</td><td><b>4.5</b> Inference and deployment（Top-K → Section V）</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="legend"><span><ins>綠底</ins> 新增或改寫</span><span><del>紅底刪除線</del> 原文刪除</span><span><span class="cl-tag">[Clarified]</span><span class="cd-tag">[Code]</span> 兩種版本並列</span></div>
+
+    <!-- 4.1 -->
+    <div class="issue">
+      <h3>4.1 Streaming RMAB 與 Whittle index</h3>
+      <div class="resolves">解決：<span class="rv">R2-W1</span><span class="rv">R2-F7</span><span class="rv">R1-W2（前向引用）</span></div>
+      <div class="diff">
+        <div class="pane"><span class="eyebrow">原文</span><p class="paper">… each UAV i ∈ 𝒰<sub>t</sub> is modeled as an independent restless arm <del>with state s<sub>i</sub><sup>t</sup> = o<sub>i</sub><sup>t</sup>, where o<sub>i</sub><sup>t</sup> is the per-UAV observation</del> … yields reward r(s<sub>i</sub><sup>t</sup>, a<sub>i</sub><sup>t</sup>). … <span class="same">（SWIP 定義後即進入 IV-B，沒有說明為何選 Whittle index）</span></p></div>
+        <div class="pane"><span class="eyebrow">修改後</span><p class="paper">… modeled as an independent restless arm <ins>whose state is the recent observation history, s<sub>i</sub><sup>t</sup> := 𝓗<sub>i</sub><sup>t</sup> = (o<sub>i</sub><sup>t−D+1</sup>, …, o<sub>i</sub><sup>t</sup>) … because a single RF and kinematic measurement may not reveal how a UAV's threat is evolving</ins> … yields reward r(s<sub>i</sub><sup>t</sup>, a<sub>i</sub><sup>t</sup>)<ins>, which quantifies how well the jamming decision matches the threat posed by the UAV. The construction of r from expert preferences is detailed in Section 4.2.</ins></p>
+        <p class="paper"><ins>We adopt the Whittle index … for three reasons. First, it is computationally tractable: dynamic programming over (5) needs a value function on |𝒮|<sup>N</sup> joint states and up to Σ<sub>k≤K</sub> C(N,k) joint actions per step; optimal RMAB control is PSPACE-hard. The Whittle relaxation grows only linearly in N, and the per-step decision is a sort, O(N log N). Second, it is asymptotically optimal as N → ∞ with K/N fixed, under indexability and a global-attractor condition. Third, it fits the streaming setting: a joint DRL policy must be redesigned when N<sub>t</sub> changes, whereas the index is a per-arm score.</ins></p></div>
+      </div>
+      <p class="read"><span class="cd-tag">[Code]</span><span class="cd">在原本「被 jam 成功就移除」那句後面，加上程式版本：被成功 jam 的 UAV 先離開 𝒰<sub>t</sub> 一段時間後恢復，累積 J<sub>break</sub> 次才永久移除。</span></p>
+    </div>
+
+    <!-- 4.2 -->
+    <div class="issue">
+      <h3>4.2 Preference-based threat reward（原 IV-C）</h3>
+      <div class="resolves">解決：<span class="rv">R1-W2（部分）</span><span class="rv">R2-F8（部分）</span><span class="rv">reward 先用後定義</span></div>
+      <div class="diff">
+        <div class="pane"><span class="eyebrow">原文</span><p class="paper">… We therefore learn the reward from pairwise comparisons of trajectory segments, following preference-based reward modeling [ouyang2022]. … It assigns to each history window 𝓗<sup>t</sup> an instantaneous threat reward r<sub>φ</sub>(𝓗<sup>t</sup>). … <del>After training, r<sub>φ</sub>(𝓗i<sup>t</sup>) provides the reward r used in the subsidized Q-learning update.</del> For ranking evaluation, we define the DIFT score …</p></div>
+        <div class="pane"><span class="eyebrow">修改後</span><p class="paper">… <ins>We therefore learn a threat model from pairwise comparisons of trajectory segments provided by domain experts, following preference-based reward learning [christiano2017, ouyang2022]. Comparing two segments is easier and more consistent for experts than assigning an absolute threat score, and the Bradley–Terry model [bradley1952] turns such comparisons into a scalar score.</ins> … <ins>Note that r<sub>φ</sub>(𝓗<sup>t</sup>) evaluates the already observed window; it does not predict future behavior. The reward model is trained once before WhittleFormer and kept fixed afterwards. To evaluate the ranking quality of WhittleFormer in Section 6.2, we define the discounted future threat (DIFT) score …</ins></p></div>
+      </div>
+      <div class="vs">
+        <div class="vcard cl-b"><span class="cl-tag" style="align-self:flex-start">[Clarified]</span><p class="paper cl">The reward of a UAV is its future threat: r(s,1) = G<sup>t,H</sup> and r(s,0) = 0, i.e., the agent collects the upcoming threat of a UAV only when it jams that UAV.</p></div>
+        <div class="vcard cd-b"><span class="cd-tag" style="align-self:flex-start">[Code]</span><p class="paper cd">p<sup>t</sup> := sigmoid((r<sub>φ</sub> − μ<sub>t</sub>)/σ<sub>t</sub>); r(s,1) = p<sup>t</sup>, r(s,0) = 1 − p<sup>t</sup>. Under a budget of K arms, maximizing this reward is equivalent to selecting the K UAVs with the highest current threat. <i>（另附：程式中 DIFT 加總到 episode 結束、γ = 0.99）</i></p></div>
+      </div>
+      <p class="read meta">標註資料量因可能涉及公司機密，先不寫；只保留 “provided by domain experts”。</p>
+    </div>
+
+    <!-- 4.3 -->
+    <div class="issue">
+      <h3>4.3 WhittleFormer 架構</h3>
+      <div class="resolves">解決：<span class="rv">R1-W3（部分）</span><span class="rv">R2-F7</span></div>
+      <div class="diff">
+        <div class="pane"><span class="eyebrow">原文</span><p class="paper">… augmented with learned type embeddings before entering the <del>GPT-2 encoder</del>. … <del>Attention-weighted pooling</del> produces a fixed-dimensional representation …</p></div>
+        <div class="pane"><span class="eyebrow">修改後</span><p class="paper">… <ins>a learned type embedding identifying the feature type (packet, position, or velocity) is added. The tokens of the D frames are concatenated …, truncated to at most 512 tokens, and fed to a Transformer backbone [vaswani2017].</ins> … <ins>Masked mean pooling over the valid (non-padded) tokens</ins> produces a fixed-dimensional representation …</p></div>
+      </div>
+      <p class="read"><span class="cd-tag">[Code]</span><span class="cd">The backbone has 12 layers, 12 attention heads, and a hidden size of 768, and is trained from scratch.</span></p>
+      <p class="read meta">依和老師的討論，正文不再提 GPT-2：Intro 第三段的引用從 GPT-2 論文改成 Transformer 原始論文（Vaswani 2017），Section 6.1 的 MA-DQN baseline 也改成 “the same Transformer backbone as WhittleFormer”。</p>
+    </div>
+
+    <!-- 4.4 -->
+    <div class="issue">
+      <h3>4.4 Training（新小節）</h3>
+      <div class="resolves">解決：<span class="rv">R2-F5</span><span class="rv">R2-F4（部分）</span><span class="rv">R2-F13（部分）</span><span class="rv">R1-F2／R2-F10（部分）</span></div>
+      <div class="diff">
+        <div class="pane"><span class="eyebrow">原文</span><p class="paper"><span class="same">（沒有描述訓練環境）</span> … ℒ<sub>Q</sub> = E[(Q<sub>θ</sub>(x,a) − (r̃ + γ max Q<sub>θ̄</sub>(x′,a′)))<sup>2</sup>] … <del>In practice, one can further use a double Q-learning loss.</del> … <del>Following a two-timescale learning scheme, the index head is updated using ℒ<sub>λ</sub> once every T<sub>λ</sub> Q-value updates, allowing Q<sub>θ</sub> to approach its current fixed point before λ<sub>θ</sub> is adjusted.</del> … Algorithm 1：<del>if g mod T<sub>λ</sub> = 0</del></p></div>
+        <div class="pane"><span class="eyebrow">修改後</span><p class="paper"><ins>WhittleFormer is trained in a simplified environment: (i) jamming does not alter a UAV's trajectory; (ii) a selected UAV is assumed to be jammed successfully, so the allocator is not involved; (iii) UAVs are not removed during training.</ins> … <ins>Double DQN target and Huber loss</ins> … <ins>The updates of Q<sub>θ</sub> and λ<sub>θ</sub> depend on each other … Following QWI [avrachenkov2022, robledo2022], the Q-heads are updated on a fast timescale and the index head on a slow one; the index update then behaves as λ ← λ + β(Q<sub>λ</sub>(s,1) − Q<sub>λ</sub>(s,0)), whose unique stable point under indexability is λ*(s). Compared with a nested bisection over λ, it reaches the same fixed point in a single loop; compared with same-rate updates, it avoids the moving-target coupling.</ins> … <ins>Q<sub>λ</sub>(s,1) − Q<sub>λ</sub>(s,0) = r(s,1) − r(s,0) − λ … γ does not affect the index in this environment.</ins> … <ins>ε-greedy rollouts, trajectory-level PER, heuristic demonstrations, buffer refill.</ins> Algorithm 1：<ins>if j mod T<sub>λ</sub> = 0</ins></p></div>
+      </div>
+      <div class="vs">
+        <div class="vcard cl-b"><span class="cl-tag" style="align-self:flex-start">[Clarified]</span>
+          <p class="paper cl">Each training episode contains a fixed population of N UAVs.</p>
+          <p class="paper cl">The subsidy is included in the Q-target … the learned index is λ* = E[G<sup>t,H</sup> | 𝓗<sup>t</sup>], the expected discounted future threat.</p></div>
+        <div class="vcard cd-b"><span class="cd-tag" style="align-self:flex-start">[Code]</span>
+          <p class="paper cd">Each training episode simulates a single UAV (N = 1); because the network is shared across arms, single-arm episodes suffice.</p>
+          <p class="paper cd">The subsidy is not added to the Q-target … Q<sub>1</sub> − Q<sub>0</sub> ≈ 2p<sup>t</sup> − 1; λ<sub>θ</sub> accumulates this gap instead of converging, and its ranking follows the current threat p<sup>t</sup>.</p>
+          <p class="paper cd">The Transformer backbone is periodically frozen (every 80 episodes).</p></div>
+      </div>
+      <p class="read meta">原論文的 RLPD 50/50 線上／離線混合在程式中找不到，已從正文移除，待同學確認。</p>
+    </div>
+
+    <!-- 4.5 -->
+    <div class="issue">
+      <h3>4.5 Inference and deployment（新小節）</h3>
+      <div class="resolves">解決：<span class="rv">R1-W4（部分）</span><span class="rv">R2-F13（部分）</span><span class="rv">R2-F14（部分）</span><span class="rv">攻擊 vs. 攻擊成功</span></div>
+      <div class="diff">
+        <div class="pane"><span class="eyebrow">原文</span><p class="paper">… newly arriving UAVs can be added to the next batch and departing UAVs can be removed without changing the network architecture or retraining the policy. <span class="same">（Section IV 到此結束，沒有接到 Section V）</span></p></div>
+        <div class="pane"><span class="eyebrow">修改後</span><p class="paper">… without … retraining the policy. <ins>Only the index head is used at inference. The set 𝒦<sub>t</sub> only states which UAVs to jam. It is passed, together with the indices, to the beam-selection and power-allocation module in Section 5 … Unlike the training environment, at test time (i) 𝒰<sub>t</sub> changes as UAVs arrive and depart, (ii) a selected UAV is jammed successfully only if the allocated power exceeds the required threshold, and (iii) a successfully jammed UAV leaves 𝒰<sub>t</sub>.</ins></p></div>
+      </div>
+      <div class="vs">
+        <div class="vcard cl-b"><span class="cl-tag" style="align-self:flex-start">[Clarified]</span><p class="paper cl">The selected UAVs are those with the largest predicted future threat.</p></div>
+        <div class="vcard cd-b"><span class="cd-tag" style="align-self:flex-start">[Code]</span><p class="paper cd">The selected UAVs are those with the largest current normalized threat. A successfully jammed UAV is suppressed for 5–15 steps and then re-enters 𝒰<sub>t</sub>; it is removed permanently after J<sub>break</sub> successful jams.</p></div>
+      </div>
+    </div>
+    <div class="note ok read">已寫入 <span class="loc">TMC/4-method.tex</span>，重新編譯：13 頁、無錯誤、無未定義引用。原檔備份於 <span class="loc">drafts/backup/</span>。</div>
+  </div>
+</section>
+
+<hr>
+
+<!-- ============ PART 3 ============ -->
+<section>
+  <h2>Check list：Reviewer 意見處理狀態</h2>
+  <div class="counts">
+    <span><span class="chip ok">完成</span> 4</span>
+    <span><span class="chip wip">處理中</span> 11</span>
+    <span><span class="chip blk">待決定</span> 1</span>
+    <span><span class="chip todo">未處理</span> 9</span>
+  </div>
+  <p class="read meta">「處理中」表示已寫入部分內容，但還有缺口；「待決定」表示兩種版本都寫了，要等老師決定方向。</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>編號</th><th>意見</th><th>狀態</th><th>已完成</th><th>還剩下</th></tr></thead>
+    <tbody>
+      <tr><td><span class="rv">R1-W1-1/2</span></td><td>為何用 RMAB；為何不用 optimization／RL</td><td><span class="chip ok">完成</span></td><td>Intro 第二、三段（Part 1）</td><td>若選綠色版本，第三段 “long-term benefit” 需改寫</td></tr>
+      <tr><td><span class="rv">R2-W1</span></td><td>Whittle index 當 priority 的優勢</td><td><span class="chip ok">完成</span></td><td>Intro 第三段；4.1 新增三點比較（複雜度、漸近最優、streaming）</td><td>—</td></tr>
+      <tr><td><span class="rv">R2-F7</span></td><td>History state 與 Markov property</td><td><span class="chip ok">完成</span></td><td>4.1 定義 s := 𝓗；全節統一用 s（移除 x）</td><td>—</td></tr>
+      <tr><td><span class="rv">內部</span></td><td>Reward 先用後定義；攻擊 vs. 攻擊成功</td><td><span class="chip ok">完成</span></td><td>reward 移到 4.2＋前向引用；4.4、4.5 寫明訓練選中即命中、測試看功率門檻</td><td>—</td></tr>
+
+      <tr><td><span class="rv">R1-W2</span></td><td>Reward 如何決定</td><td><span class="chip blk">待決定</span></td><td>RLHF／BT 文獻、domain experts、r<sub>φ</sub> 評的是過去視窗</td><td>reward 公式（紅／綠二選一）</td></tr>
+
+      <tr><td><span class="rv">R1-W3</span></td><td>為何用 GPT-2</td><td><span class="chip wip">處理中</span></td><td>4.3、MA-DQN 改成 Transformer；Intro 第三段的引用改成 Transformer 原始論文（Vaswani 2017）；寫出模型規模</td><td>為何選 Transformer 而非 RNN；架構圖仍被註解</td></tr>
+      <tr><td><span class="rv">R1-W4</span></td><td>Section V 與前文不連貫</td><td><span class="chip wip">處理中</span></td><td>4.5 銜接到 Section V</td><td>Section V 標題與 “SSC power allocator” 名稱統一；Fig. 2 標章節；Intro “agnostic” 句</td></tr>
+      <tr><td><span class="rv">R1-F2</span> <span class="rv">R2-F10</span></td><td>Optimality／收斂分析</td><td><span class="chip wip">處理中</span></td><td>4.4 用 QWI 說明收斂機制；推導 γ 不影響 index</td><td>綠色版本下 λ 不收斂，論述要依方向調整；訓練曲線未放回</td></tr>
+      <tr><td><span class="rv">R1-Writing</span></td><td>組織不佳</td><td><span class="chip wip">處理中</span></td><td>Section IV 重排（問題 → reward → 架構 → 訓練 → 部署）並加開頭導覽</td><td>Intro 結尾的 organization 段；3-env.tex 的 “. .”；ablation 分類</td></tr>
+      <tr><td><span class="rv">R2-F4</span></td><td>參數數值與意義</td><td><span class="chip wip">處理中</span></td><td>Algorithm 1 j／g 修正；補 ε-greedy、PER、demo、refill</td><td>參數表（Section VI 或 appendix）</td></tr>
+      <tr><td><span class="rv">R2-F5</span></td><td>為何 two-timescale</td><td><span class="chip wip">處理中</span></td><td>QWI 推導與兩個比較優勢</td><td>收斂結論依方向而定</td></tr>
+      <tr><td><span class="rv">R2-F8</span></td><td>Preference label 的蒐集與可靠度</td><td><span class="chip wip">處理中</span></td><td>蒐集方式、BT 模型</td><td>標註一致性；與傳統威脅指標比較；評估與訓練同源的說明</td></tr>
+      <tr><td><span class="rv">R2-F13</span></td><td>不同 UAV 數量無須重訓</td><td><span class="chip wip">處理中</span></td><td>4.4、4.5 分開寫訓練與測試環境</td><td>訓練 N 固定或 N = 1；Fig. 12 的 32 與 256 是否同一 checkpoint</td></tr>
+      <tr><td><span class="rv">R2-F14</span></td><td>RF／jamming 是否實測</td><td><span class="chip wip">處理中</span></td><td>4.5 寫明測試時的 jam 成功條件</td><td>Section III 與 VI 的軌跡、RF 描述矛盾；明寫哪些是模擬</td></tr>
+      <tr><td><span class="rv">內部</span></td><td>被 jam 的 UAV：移除還是恢復（7 處）</td><td><span class="chip wip">處理中</span></td><td>4.1、4.5 已加程式版本</td><td><span class="loc">3-env.tex:8</span>；Section VI 各實驗的模式；J<sub>break</sub> 是 1 還是 5</td></tr>
+      <tr><td><span class="rv">內部</span></td><td>其他小矛盾</td><td><span class="chip wip">處理中</span></td><td>𝒰<sub>t</sub>、𝓗<sub>i</sub> 底線；DIFT 符號統一；bib 重複條目</td><td>4.1 仍寫 “action-dependent transition kernel”，與訓練環境不符；H 與 𝓗 易混淆</td></tr>
+
+      <tr><td><span class="rv">R2-W3</span></td><td>Indexability 如何驗證</td><td><span class="chip todo">未處理</span></td><td>—</td><td>可寫成命題：由 2.1 推導，Q 差值隨 λ 遞減，訓練環境下 indexability 直接成立（兩種版本皆適用）</td></tr>
+      <tr><td><span class="rv">R2-W2</span> <span class="rv">R2-F9</span></td><td>計算量與複雜度</td><td><span class="chip todo">未處理</span></td><td>—</td><td>隨 N、K 實測（芯薇）；解析式複雜度</td></tr>
+      <tr><td><span class="rv">R2-F11</span></td><td>推論時間、記憶體、端到端 latency</td><td><span class="chip todo">未處理</span></td><td>—</td><td>V-B 定義 Fig. 9 兩種變體；補測</td></tr>
+      <tr><td><span class="rv">R2-F12</span></td><td>核心元件 ablation</td><td><span class="chip todo">未處理</span></td><td>—</td><td>history（D = 1）、backbone、preference reward、Whittle learning；建議加「直接用 r<sub>φ</sub> 或迴歸 G 排序」</td></tr>
+      <tr><td><span class="rv">R2-F6</span></td><td>η<sub>th</sub> 如何決定</td><td><span class="chip todo">未處理</span></td><td>—</td><td>敏感度實驗（秉宸）</td></tr>
+      <tr><td><span class="rv">R1-F1</span></td><td>各方法的選擇理由與連結</td><td><span class="chip todo">未處理</span></td><td>—</td><td>貢獻列表的論述主線；λ → W、MILP 的理由</td></tr>
+      <tr><td><span class="rv">R1-F3</span></td><td>Baseline 過於簡單</td><td><span class="chip todo">未處理</span></td><td>—</td><td>QWINN／NeurWIN 等學習型 baseline</td></tr>
+      <tr><td><span class="rv">R1-F4</span></td><td>Optimality／complexity 模擬圖</td><td><span class="chip todo">未處理</span></td><td>—</td><td>小規模窮舉的 optimality gap 圖</td></tr>
+      <tr><td><span class="rv">R1-Novelty</span></td><td>與既有 index-learning 方法的區隔</td><td><span class="chip todo">未處理</span></td><td>—</td><td>Related Work 補明確對比</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="block read">
+    <h3>仍待同學回覆</h3>
+    <ol class="qlist">
+      <li>論文的 checkpoint 是否用這份程式、num_arms = 1 訓練？</li>
+      <li>補貼 λ 沒有加進 Q target 是刻意的嗎？λ 在訓練中是否持續漂移？</li>
+      <li>「有 jam 才拿到 G<sub>t</sub>」對應的是哪段程式？</li>
+      <li>排序評估用哪一種 DIFT、H 是多少？</li>
+      <li>J<sub>break</sub> 是 1 還是 5？RLPD 是否真的有用？</li>
+    </ol>
+  </div>
+</section>
+
+</div>
